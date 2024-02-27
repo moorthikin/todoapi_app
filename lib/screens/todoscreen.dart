@@ -40,42 +40,48 @@ class _TodoScreenState extends State<TodoScreen> {
         ),
         replacement: RefreshIndicator(
           onRefresh: getTodo,
-          child: ListView.builder(
-              itemCount: Todo.length,
-              itemBuilder: (context, index) {
-                final Todos = Todo[index] as Map;
-                final id = Todos['_id'] as String;
-                return ListTile(
-                  leading: CircleAvatar(
-                    child: Text("${index + 1}"),
-                  ),
-                  title: Text(
-                    Todos['title'],
-                    style: TextStyle(color: TodoColors.button),
-                  ),
-                  subtitle: Text(
-                    Todos['description'],
-                    style: TextStyle(color: TodoColors.button),
-                  ),
-                  trailing: PopupMenuButton(onSelected: (value) {
-                    if (value == "edit ") {
-                    } else if (value == "delete") {
-                      DeleteTodo(id);
-                    }
-                  }, itemBuilder: (context) {
-                    return [
-                      PopupMenuItem(
-                        child: Text("Edit"),
-                        value: "edit",
-                      ),
-                      PopupMenuItem(
-                        child: Text("Delete"),
-                        value: "delete",
-                      )
-                    ];
-                  }),
-                );
-              }),
+          child: Visibility(
+            visible: Todo.isNotEmpty,
+            replacement: Center(
+              child: Text("No Todo Added Yet"),
+            ),
+            child: ListView.builder(
+                itemCount: Todo.length,
+                itemBuilder: (context, index) {
+                  final Todos = Todo[index] as Map;
+                  final id = Todos['_id'] as String;
+                  return ListTile(
+                    leading: CircleAvatar(
+                      child: Text("${index + 1}"),
+                    ),
+                    title: Text(
+                      Todos['title'],
+                      style: TextStyle(color: TodoColors.button),
+                    ),
+                    subtitle: Text(
+                      Todos['description'],
+                      style: TextStyle(color: TodoColors.button),
+                    ),
+                    trailing: PopupMenuButton(onSelected: (value) {
+                      if (value == "edit ") {
+                      } else if (value == "delete") {
+                        DeleteTodo(id);
+                      }
+                    }, itemBuilder: (context) {
+                      return [
+                        PopupMenuItem(
+                          child: Text("Edit"),
+                          value: "edit",
+                        ),
+                        PopupMenuItem(
+                          child: Text("Delete"),
+                          value: "delete",
+                        )
+                      ];
+                    }),
+                  );
+                }),
+          ),
         ),
       ),
     );
@@ -89,6 +95,9 @@ class _TodoScreenState extends State<TodoScreen> {
   }
 
   Future<void> getTodo() async {
+    setState(() {
+      isLoading = true;
+    });
     final Url = "https://api.nstack.in/v1/todos";
     final uri = Uri.parse(Url);
 
@@ -113,6 +122,10 @@ class _TodoScreenState extends State<TodoScreen> {
     final response = await http.delete(uri);
     if (response.statusCode == 200) {
 //delete the Todo by id
+      final filtered = Todo.where((element) => element['_id'] != id).toList();
+      setState(() {
+        Todo = filtered;
+      });
     } else {
       // show some error message
     }

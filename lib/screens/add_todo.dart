@@ -15,6 +15,7 @@ class AddTodoScreen extends StatefulWidget {
 }
 
 class _AddTodoScreenState extends State<AddTodoScreen> {
+  final formkey = GlobalKey<FormState>();
   TextEditingController titleController = TextEditingController();
   TextEditingController descriptionController = TextEditingController();
   @override
@@ -30,24 +31,78 @@ class _AddTodoScreenState extends State<AddTodoScreen> {
       body: ListView(
         padding: EdgeInsets.all(12),
         children: [
-          TextFormField(
-            controller: titleController,
-            decoration: InputDecoration(hintText: "Enter Title"),
-          ),
-          SizedBox(
-            height: 20,
-          ),
-          TextFormField(
-            controller: descriptionController,
-            decoration: InputDecoration(hintText: "Enter Description"),
-            minLines: 2,
-            maxLines: 8,
-          ),
+          Form(
+              key: formkey,
+              child: Column(
+                children: [
+                  TextFormField(
+                    controller: titleController,
+                    decoration: InputDecoration(hintText: "Enter Title"),
+                    validator: (value) {
+                      if (value!.isEmpty) {
+                        return "Please enter Title";
+                      } else if (value.length <= 3) {
+                        return "Please enter atleast 3 Characters";
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(
+                    height: 20,
+                  ),
+                  TextFormField(
+                    controller: descriptionController,
+                    decoration: InputDecoration(hintText: "Enter Description"),
+                    minLines: 2,
+                    maxLines: 8,
+                    validator: (value) {
+                      if (value!.isEmpty) {
+                        return "Please enter the Description";
+                      } else if (value.length <= 3) {
+                        return "Please enter atleast 3 Characters";
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              )),
           SizedBox(
             height: 20,
           ),
           ElevatedButton(
-              onPressed: addtodo,
+              onPressed: () async {
+                if (formkey.currentState!.validate()) {
+                  final todotitle = titleController.text;
+                  final tododescription = descriptionController.text;
+                  final body = {
+                    "title": todotitle,
+                    "description": tododescription,
+                    "is_completed": false
+                  };
+
+                  try {
+                    final response = await http.post(
+                        Uri.parse("https://api.nstack.in/v1/todos"),
+                        body: jsonEncode(body),
+                        headers: {'Content-Type': ' application/json'});
+
+                    print(response.statusCode);
+                    if (response.statusCode == 201) {
+                      titleController.text = '';
+                      descriptionController.text = '';
+                      print("data added");
+                      successmessage("Todo Added Successfully");
+                    }
+                  } catch (e) {
+                    print(e);
+
+                    errormessage("Creation Failed");
+                    print("error happen");
+                  }
+                } else {
+                  return null;
+                }
+              },
               style: ButtonStyle(
                   backgroundColor: MaterialStatePropertyAll(Colors.blue)),
               child: Text(
@@ -57,36 +112,6 @@ class _AddTodoScreenState extends State<AddTodoScreen> {
         ],
       ),
     );
-  }
-
-  void addtodo() async {
-    final todotitle = titleController.text;
-    final tododescription = descriptionController.text;
-    final body = {
-      "title": todotitle,
-      "description": tododescription,
-      "is_completed": false
-    };
-
-    try {
-      final response = await http.post(
-          Uri.parse("https://api.nstack.in/v1/todos"),
-          body: jsonEncode(body),
-          headers: {'Content-Type': ' application/json'});
-
-      print(response.statusCode);
-      if (response.statusCode == 201) {
-        titleController.text = '';
-        descriptionController.text = '';
-        print("data added");
-        successmessage("Todo Added Successfully");
-      }
-    } catch (e) {
-      print(e);
-
-      errormessage("Creation Failed");
-      print("error happen");
-    }
   }
 
   void successmessage(String message) {
